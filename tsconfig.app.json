@@ -20,7 +20,19 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+    
+    "baseUrl": "./src", // Set the base URL for resolving paths to the src folder
+    "paths": {
+      "common/*": ["common/*"],
+      "loadData/*": ["loadData/*"],
+      "utils/*": ["utils/*"],
+      "styles/*": ["styles/*"],
+      "spaceTimeChart/*": ["spaceTimeChart/*"],
+      "application/*": ["application/*"],
+      "reducer/*": ["reducer/*"],
+      "store/*": ["store/*"],
+    }
   },
   "include": ["src"]
 }

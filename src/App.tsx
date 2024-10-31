@@ -1,35 +1,33 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from 'react';
 
-function App() {
-  const [count, setCount] = useState(0)
+import ImportTrainScheduleConfig from 'loadData/ImportTrainScheduleConfig.tsx';
+import { ModalProvider } from 'common/BootstrapSNCF/ModalSNCF/ModalProvider';
+import ManchetteWithSpaceTimeWrapper from 'spaceTimeChart/spaceTimeChart';
+
+import type { ProjectPathTrainResult, Waypoint } from '@osrd-project/ui-manchette/dist/types';
+import { WorkSchedule } from 'spaceTimeChart/types';
+import ImportWorkSchedules from 'loadData/ImportWorkSchedule';
+
+const App = () => {
+  const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
+  const [projectPathTrainResult, setProjectPathTrainResult] = useState<ProjectPathTrainResult[]>([]);
+  
+  const [workschedules, setWorkSchedules] = useState<WorkSchedule[]>([]);
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <ModalProvider>
+        <ImportTrainScheduleConfig
+          setWaypoints={setWaypoints}
+          setProjectPathTrainResult={setProjectPathTrainResult}
+        />
+        <ImportWorkSchedules setWorkSchedules={setWorkSchedules}
+        />
+        <ManchetteWithSpaceTimeWrapper waypoints={waypoints} projectPathTrainResult={projectPathTrainResult} selectedTrain={0}  workSchedules={workschedules}       
+        />
+      </ModalProvider>
     </>
   )
-}
+};
 
-export default App
+export default App;

@@ -1,0 +1,25 @@
+.input-group {
+  button {
+    height: 1.875rem;
+    font-size: 0.875rem;
+    padding: 0.125rem 1.5rem;
+  }
+  .form-control-container {
+    height: 1.875rem;
+    input.form-control {
+      min-height: auto;
+      font-size: 0.875rem;
+    }
+  }
+  z-index: auto !important;
+
+  .dropdown .dropdown-menu[x-placement='bottom-end'] {
+    top: 2.3rem !important;
+  }
+  .osrd-dropdown-sncf {
+    right: 0 !important;
+  }
+}
+.dropdown-item {
+  cursor: pointer;
+}
