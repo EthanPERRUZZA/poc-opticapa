@@ -186,3 +186,12 @@ export type TrainScheduleResult = TrainScheduleBase & {
   id: number;
   timetable_id: number;
 };
+export type Waypoint =
+  | {
+      id: string;
+      type: 'BufferStop';
+    }
+  | {
+      id: string;
+      type: 'Detector';
+    };

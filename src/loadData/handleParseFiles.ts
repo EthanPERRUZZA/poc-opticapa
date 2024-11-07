@@ -1,4 +1,4 @@
-import { Waypoint } from 'common/api/generatedEditoastApi';
+import { Waypoint } from 'common/api/types';
 import type { ImportedTrainSchedule } from './types';
 
 export const handleFileReadingError = (error: Error) => {
