@@ -1,3 +1,4 @@
+import { Waypoint } from 'common/api/generatedEditoastApi';
 import type { ImportedTrainSchedule } from './types';
 
 export const handleFileReadingError = (error: Error) => {
@@ -11,7 +12,7 @@ export const handleXmlParsingError = (error: Error) => {
 export const processXmlFile = async (
   fileContent: string,
   parseRailML: (xmlDoc: Document) => Promise<ImportedTrainSchedule[]>,
-  updateTrainSchedules: (schedules: ImportedTrainSchedule[]) => void
+  updateTrainSchedules: (schedules: ImportedTrainSchedule[], waypoints: Waypoint[]) => void
 ) => {
   try {
     const parser = new DOMParser();
@@ -22,10 +23,11 @@ export const processXmlFile = async (
       throw new Error('Invalid XML');
     }
 
-    const importedTrainSchedules = await parseRailML(xmlDoc);
+    const [importedTrainSchedules, waypoints] = await parseRailML(xmlDoc);
+    
     console.log(importedTrainSchedules)
     if (importedTrainSchedules && importedTrainSchedules.length > 0) {
-      updateTrainSchedules(importedTrainSchedules);
+      updateTrainSchedules(importedTrainSchedules, waypoints);
     }
   } catch (error) {
     handleXmlParsingError(error as Error);

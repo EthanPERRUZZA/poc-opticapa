@@ -17,7 +17,7 @@ import {
   processXmlFile,
 } from './handleParseFiles';
 
-import type { ProjectPathTrainResult, Waypoint } from '@osrd-project/ui-manchette/dist/types';
+import { ProjectPathTrainResult, Waypoint } from '@osrd-project/ui-manchette/dist/types';
 
 type ImportTrainScheduleConfigProps = {
   setWaypoints: (waypoint: Waypoint[]) => void;
@@ -32,18 +32,22 @@ const ImportTrainScheduleConfig = ({
 
   const convertImportedTrainScheduleToProjectPathTrainResult = (
     importedSchedule: ImportedTrainSchedule,
-    id: number
+    id: number,
+    waypoints: Waypoint[]
 ): ProjectPathTrainResult => {
     let allPositions: number[] = [];
     let allTimes: number[] = [];
 
     let current_position = 0;
     let first_departure = 0;
-
     importedSchedule.steps.forEach((step) => {
         // Combine positions (latitude, longitude) into a single array of positions
+        
+        if (waypoints.some(waypoints => waypoints.id == step.uic) ) {
+          current_position = waypoints.find(waypoints => waypoints.id == step.uic).position;
+        }
         allPositions.push(current_position);
-
+        
         if (current_position === 0) {
           first_departure = new Date(step.departureTime).getTime();
           allTimes.push(0);
@@ -70,7 +74,9 @@ const ImportTrainScheduleConfig = ({
     };
 };
 
-  function updateTrainSchedules(importedTrainSchedules: ImportedTrainSchedule[]) {
+  function updateTrainSchedules(importedTrainSchedules: ImportedTrainSchedule[],
+    waypoints: Waypoint[]
+  ) {
     // For each train schedule, we add the duration and tracks of each step
     const trainsSchedules = importedTrainSchedules.map((trainSchedule) => {
       const stepsWithDuration = trainSchedule.steps.map((step) => {
@@ -93,7 +99,7 @@ const ImportTrainScheduleConfig = ({
 
     let idCounter = 1;
     const projectPathTrainResult = trainsSchedules.map((trainsSchedule) => {
-      return convertImportedTrainScheduleToProjectPathTrainResult(trainsSchedule, idCounter++);
+      return convertImportedTrainScheduleToProjectPathTrainResult(trainsSchedule, idCounter++, waypoints);
     });
     
     setProjectPathTrainResult(projectPathTrainResult);
@@ -103,7 +109,7 @@ const ImportTrainScheduleConfig = ({
 
   function convertToWaypoints(record: Record<string, CichDictValue>): Waypoint[] {
     return Object.entries(record).map(([id, value], index) => ({
-        id,
+        id: "87" + value.ciCode,
         position: index * 410000, // Use the index as the position
         name: value.name || undefined, // Only include name if it's not null
         secondaryCode: value.chCode, // Secondary code is optional and may be undefined
@@ -191,7 +197,7 @@ const ImportTrainScheduleConfig = ({
     return updatedTrainSchedules;
   };
 
-  const parseRailML = async (xmlDoc: Document): Promise<ImportedTrainSchedule[]> => {
+  const parseRailML = async (xmlDoc: Document): Promise<[ImportedTrainSchedule[], Waypoint[]]> => {
     const trainSchedules: ImportedTrainSchedule[] = [];
 
     // Initialize localCichDict
@@ -222,11 +228,6 @@ const ImportTrainScheduleConfig = ({
     const trainParts = Array.from(xmlDoc.getElementsByTagName('trainPart'));
     const period = xmlDoc.getElementsByTagName('timetablePeriod')[0];
     const startDate = period ? period.getAttribute('startDate') : null;
-
-    if (!startDate) {
-      console.error('Start Date not found in the timetablePeriod.');
-      return trainSchedules;
-    }
 
     trainParts.forEach((train) => {
       const trainNumber = train.getAttribute('id') || '';
@@ -263,7 +264,7 @@ const ImportTrainScheduleConfig = ({
     const trains = Array.from(xmlDoc.getElementsByTagName('train'));
     const updatedTrainSchedules = mapTrainNames(trainSchedules, trains);
     // setTrainsXmlData(updatedTrainSchedules);
-    return updatedTrainSchedules;
+    return await Promise.all([updatedTrainSchedules, waypoints]);
   };
 
   const importFile = async (file: File) => {
