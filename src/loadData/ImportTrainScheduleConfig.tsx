@@ -47,14 +47,16 @@ const ImportTrainScheduleConfig = ({
         const matchingWaypoint = waypoints.find(waypoint => waypoint.id === step.uic.toString());
 
         if (matchingWaypoint) {
+          if (!matchingWaypoint.name) {
+              matchingWaypoint.name = step.name;
+          }
+
             //console.log(matchingWaypoint.position);
             current_position = matchingWaypoint.position;
             usedWaypointsSet.add(matchingWaypoint.id); // Track waypoint as used
         }
         
         allPositions.push(current_position);
-        console.log(step.departureTime.length);
-        console.log(step.arrivalTime.length);
         if (step.departureTime.length > 11 && step.arrivalTime.length > 11)  {
           totalDuration += new Date(step.arrivalTime).getTime() - new Date(step.departureTime).getTime();
           lastDepartureTime = new Date(step.arrivalTime).getTime();
@@ -62,9 +64,6 @@ const ImportTrainScheduleConfig = ({
         else if (lastDepartureTime !== 0 && step.arrivalTime.length > 11) {
           totalDuration += new Date(step.arrivalTime).getTime() - lastDepartureTime;
           lastDepartureTime = new Date(step.arrivalTime).getTime();
-        }
-        else if (step.departureTime.length > 11) {
-          lastDepartureTime = new Date(step.departureTime).getTime();
         }
 
         allTimes.push(totalDuration);
