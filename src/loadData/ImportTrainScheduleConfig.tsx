@@ -34,78 +34,98 @@ const ImportTrainScheduleConfig = ({
     importedSchedule: ImportedTrainSchedule,
     id: number,
     waypoints: Waypoint[]
-): ProjectPathTrainResult => {
+): { result: ProjectPathTrainResult, usedWaypointsSet: Set<number> } => {
     let allPositions: number[] = [];
     let allTimes: number[] = [];
+    let usedWaypointsSet = new Set<number>();
 
     let current_position = 0;
-    let first_departure = 0;
+    let totalDuration = 0;
+    let lastDepartureTime = 0;
+
     importedSchedule.steps.forEach((step) => {
-        // Combine positions (latitude, longitude) into a single array of positions
-        
-        if (waypoints.some(waypoints => waypoints.id == step.uic) ) {
-          current_position = waypoints.find(waypoints => waypoints.id == step.uic).position;
+        const matchingWaypoint = waypoints.find(waypoint => waypoint.id === step.uic.toString());
+
+        if (matchingWaypoint) {
+            //console.log(matchingWaypoint.position);
+            current_position = matchingWaypoint.position;
+            usedWaypointsSet.add(matchingWaypoint.id); // Track waypoint as used
         }
+        
         allPositions.push(current_position);
-        
-        if (current_position === 0) {
-          first_departure = new Date(step.departureTime).getTime();
-          allTimes.push(0);
+        console.log(step.departureTime.length);
+        console.log(step.arrivalTime.length);
+        if (step.departureTime.length > 11 && step.arrivalTime.length > 11)  {
+          totalDuration += new Date(step.arrivalTime).getTime() - new Date(step.departureTime).getTime();
+          lastDepartureTime = new Date(step.arrivalTime).getTime();
         }
-        else {
-          allTimes.push(
-            new Date(step.arrivalTime).getTime() - first_departure
-          );
+        else if (lastDepartureTime !== 0 && step.arrivalTime.length > 11) {
+          totalDuration += new Date(step.arrivalTime).getTime() - lastDepartureTime;
+          lastDepartureTime = new Date(step.arrivalTime).getTime();
         }
-        
-        current_position += 3000000;
+        else if (step.departureTime.length > 11) {
+          lastDepartureTime = new Date(step.departureTime).getTime();
+        }
+
+        allTimes.push(totalDuration);
     });
 
     return {
-        id,
-        name: `Train ${id}`,  // Example: Train ID is used as the name
-        departureTime: new Date(importedSchedule.departureTime),  // Convert departureTime to Date
-        spaceTimeCurves: [
-            {
-                positions: allPositions,
-                times: allTimes,
-            },
-        ],
+        result: {
+            id,
+            name: `Train ${id}`,
+            departureTime: new Date(importedSchedule.departureTime),
+            spaceTimeCurves: [
+                {
+                    positions: allPositions,
+                    times: allTimes,
+                },
+            ],
+        },
+        usedWaypointsSet,
     };
 };
 
-  function updateTrainSchedules(importedTrainSchedules: ImportedTrainSchedule[],
-    waypoints: Waypoint[]
-  ) {
-    // For each train schedule, we add the duration and tracks of each step
-    const trainsSchedules = importedTrainSchedules.map((trainSchedule) => {
-      const stepsWithDuration = trainSchedule.steps.map((step) => {
-        // calcul duration in seconds between step arrival and departure
-        // in case of arrival and departure are the same, we set duration to 0
-        // for the step arrivalTime is before departureTime because the train first goes to the station and then leaves it
-        const duration = Math.round(
-          (new Date(step.departureTime).getTime() - new Date(step.arrivalTime).getTime()) / 1000
-        );
-        return {
-          ...step,
-          duration,
-        };
-      });
-      return {
-        ...trainSchedule,
-        steps: stepsWithDuration,
-      };
-    });
 
-    let idCounter = 1;
-    const projectPathTrainResult = trainsSchedules.map((trainsSchedule) => {
-      return convertImportedTrainScheduleToProjectPathTrainResult(trainsSchedule, idCounter++, waypoints);
-    });
-    
-    setProjectPathTrainResult(projectPathTrainResult);
-    console.log(projectPathTrainResult);
-    // setTrainsList(trainsSchedules);
-  }
+function updateTrainSchedules(
+  importedTrainSchedules: ImportedTrainSchedule[],
+  waypoints: Waypoint[]
+) {
+  const trainsSchedules = importedTrainSchedules.map((trainSchedule) => {
+      const stepsWithDuration = trainSchedule.steps.map((step) => {
+          const duration = Math.round(
+              (new Date(step.departureTime).getTime() - new Date(step.arrivalTime).getTime()) / 1000
+          );
+          return { ...step, duration };
+      });
+
+      return { ...trainSchedule, steps: stepsWithDuration };
+  });
+
+  let idCounter = 1;
+  let allUsedWaypoints = new Set<number>();
+
+  const projectPathTrainResult = trainsSchedules.map((trainSchedule) => {
+      const { result, usedWaypointsSet } = convertImportedTrainScheduleToProjectPathTrainResult(
+          trainSchedule,
+          idCounter++,
+          waypoints
+      );
+
+      usedWaypointsSet.forEach(id => allUsedWaypoints.add(id)); // Accumulate all used waypoints
+      return result;
+  });
+
+  // Filter waypoints to keep only those in allUsedWaypoints
+  const filteredWaypoints = waypoints.filter(waypoint => allUsedWaypoints.has(waypoint.id));
+
+  // Store the result and log
+  setProjectPathTrainResult(projectPathTrainResult);
+  setWaypoints(filteredWaypoints);
+  console.log(projectPathTrainResult);
+  console.log("Filtered Waypoints:", filteredWaypoints);
+}
+
 
   function convertToWaypoints(record: Record<string, CichDictValue>): Waypoint[] {
     return Object.entries(record).map(([id, value], index) => ({
